@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Empresa {
+  id   Int    @id @default(autoincrement())
+  nome String
+
+  usuarios   Usuario[]
+  checklists Checklist[]
+
+  createdAt DateTime @default(now())
+}
+
+model Usuario {
+  id        Int    @id @default(autoincrement())
+  nome      String
+  email     String @unique
+  senhaHash String
+
+  empresaId Int
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+
+  execucoes ExecucaoChecklist[]
+
+  createdAt DateTime @default(now())
+}
+
+model Checklist {
+  id            Int     @id @default(autoincrement())
+  titulo        String
+  ativo         Boolean @default(true)
+  periodicidade String // DIARIO | SEMANAL
+
+  empresaId Int
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+
+  itens     ChecklistItem[]
+  execucoes ExecucaoChecklist[]
+
+  createdAt DateTime @default(now())
+}
+
+model ChecklistItem {
+  id          Int     @id @default(autoincrement())
+  descricao   String
+  ordem       Int
+  obrigatorio Boolean @default(false)
+
+  checklistId Int
+  checklist   Checklist @relation(fields: [checklistId], references: [id])
+
+  execucoes ExecucaoItem[]
+}
+
+model ExecucaoChecklist {
+  id           Int      @id @default(autoincrement())
+  dataExecucao DateTime
+
+  checklistId Int
+  checklist   Checklist @relation(fields: [checklistId], references: [id])
+
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  itens ExecucaoItem[]
+
+  createdAt DateTime @default(now())
+}
+
+model ExecucaoItem {
+  id        Int     @id @default(autoincrement())
+  concluido Boolean
+
+  execucaoId Int
+  execucao   ExecucaoChecklist @relation(fields: [execucaoId], references: [id])
+
+  itemId Int
+  item   ChecklistItem @relation(fields: [itemId], references: [id])
+}
