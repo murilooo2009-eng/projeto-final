@@ -15,64 +15,72 @@ export class AuthService {
 
 async register(data: RegisterDto) {
 
-  const usuarioExistente = await this.prisma.usuario.findUnique({
-    where: { email: data.email }
-  });
-
-  if (usuarioExistente) {
-    throw new BadRequestException('Email já cadastrado');
-  }
+  const email = data.email.toLowerCase();
 
   const senhaHash = await bcrypt.hash(data.senha, 10);
 
-  const empresa = await this.prisma.empresa.create({
-    data: {
-      nome: `${data.nome} Empresa`
-    }
-  });
+  try {
 
-  const usuario = await this.prisma.usuario.create({
-    data: {
-      nome: data.nome,
-      email: data.email,
-      senhaHash: senhaHash,
-      empresaId: empresa.id
-    }
-  });
+    return await this.prisma.$transaction(async (tx) => {
 
-  return {
-    id: usuario.id,
-    nome: usuario.nome,
-    email: usuario.email
-  };
-}
+      const empresa = await tx.empresa.create({
+        data: {
+          nome: data.nomeEmpresa
+        }
+      });
 
-async login(email: string, senha: string) {
-    const usuario = await this.prisma.usuario.findUnique({
-      where: { email },
+      const usuario = await tx.usuario.create({
+        data: {
+          nome: data.nome,
+          email: email,
+          senhaHash,
+          empresaId: empresa.id
+        }
+      });
+
+      return {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email
+      };
     });
 
-    if (!usuario) {
-      throw new UnauthorizedException('Usuário não encontrado');
+  } catch (error) {
+
+    if (error.code === 'P2002') {
+      throw new BadRequestException('Email já cadastrado');
     }
 
-    const senhaValida = await bcrypt.compare(
-      senha,
-      usuario.senhaHash,
-    );
-
-    if (!senhaValida) {
-      throw new UnauthorizedException('Senha inválida');
-    }
-
-    const payload = {
-      sub: usuario.id,
-      email: usuario.email,
-      empresaId: usuario.empresaId,
-    };
-
-    return {
-      token: this.jwtService.sign(payload),
-    };
+    throw error;
   }
+}
+
+async login(data: LoginDto) {
+
+  const email = data.email.toLowerCase();
+
+  const usuario = await this.prisma.usuario.findUnique({
+    where: { email }
+  });
+
+  if (!usuario) {
+    throw new UnauthorizedException('Credenciais inválidas');
+  }
+
+  const senhaValida = await bcrypt.compare(data.senha, usuario.senhaHash);
+
+  if (!senhaValida) {
+    throw new UnauthorizedException('Credenciais inválidas');
+  }
+
+  const payload = {
+    sub: usuario.id,
+    email: usuario.email,
+    empresaId: usuario.empresaId
+  };
+
+  return {
+    access_token: this.jwtService.sign(payload)
+  };
+}
 }
