@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { access } from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +42,11 @@ async register(data: RegisterDto) {
       return {
         id: usuario.id,
         nome: usuario.nome,
-        email: usuario.email
+        email: usuario.email,
+        access_token: this.jwtService.sign({
+          sub: usuario.id,
+          empresaId: usuario.empresaId
+        })
       };
     });
 
@@ -75,7 +80,6 @@ async login(data: LoginDto) {
 
   const payload = {
     sub: usuario.id,
-    email: usuario.email,
     empresaId: usuario.empresaId
   };
 
