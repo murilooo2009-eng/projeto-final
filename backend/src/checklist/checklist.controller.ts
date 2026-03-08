@@ -14,6 +14,7 @@ import { ChecklistService } from './checklist.service';
 import { CreateChecklistDto } from './dto/create-checklist.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateItemDto } from './dto/create-item.dto';
 
 @Controller('checklists')
 @UseGuards(JwtAuthGuard)
@@ -28,6 +29,19 @@ export class ChecklistController {
   ) {
     return this.service.create(dto, req.user.id);
   }
+
+  @Post(':id/itens')
+createItem(
+  @Param('id') id: string,
+  @Body() dto: CreateItemDto,
+  @Request() req
+) {
+  return this.service.createItem(
+    Number(id),
+    dto,
+    req.user.id
+  );
+}
 
   @Get()
   findAll(@Request() req) {

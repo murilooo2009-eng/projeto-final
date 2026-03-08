@@ -5,7 +5,6 @@ import { JwtService } from '@nestjs/jwt';
 import { BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
-import { access } from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +15,7 @@ export class AuthService {
 
 async register(data: RegisterDto) {
 
-  const email = data.email.toLowerCase();
+  const email = data.email.trim().toLowerCase();
 
   const senhaHash = await bcrypt.hash(data.senha, 10);
 
@@ -52,7 +51,7 @@ async register(data: RegisterDto) {
 
   } catch (error) {
 
-    if (error.code === 'P2002') {
+    if (error?.code === 'P2002') {
       throw new BadRequestException('Email já cadastrado');
     }
 
@@ -65,7 +64,14 @@ async login(data: LoginDto) {
   const email = data.email.toLowerCase();
 
   const usuario = await this.prisma.usuario.findUnique({
-    where: { email }
+    where: { email },
+    select: {
+    id: true,
+    email: true,
+    senhaHash: true,
+    empresaId: true,
+    nome: true
+  }
   });
 
   if (!usuario) {

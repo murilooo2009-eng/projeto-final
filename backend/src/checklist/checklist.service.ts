@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateChecklistDto } from './dto/create-checklist.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
+import { CreateItemDto } from './dto/create-item.dto';
 
 @Injectable()
 export class ChecklistService {
@@ -35,6 +36,47 @@ export class ChecklistService {
 
   }
 
+  async createItem(
+  checklistId: number,
+  dto: CreateItemDto,
+  usuarioId: number
+) {
+
+  const usuario = await this.getUsuario(usuarioId);
+
+  if (!usuario) {
+    throw new NotFoundException('Usuário não encontrado');
+  }
+
+  const checklist = await this.prisma.checklist.findFirst({
+    where: {
+      id: checklistId,
+      empresaId: usuario.empresaId
+    }
+  });
+
+  if (!checklist) {
+    throw new NotFoundException('Checklist não encontrado');
+  }
+
+  const ultimoItem = await this.prisma.checklistItem.findFirst({
+    where: { checklistId },
+    orderBy: { ordem: 'desc' }
+  });
+
+  const ordem = dto.ordem ?? (ultimoItem ? ultimoItem.ordem + 1 : 1);
+
+  return this.prisma.checklistItem.create({
+    data: {
+      descricao: dto.descricao,
+      obrigatorio: dto.obrigatorio ?? false,
+      ordem,
+      checklistId
+    }
+  });
+
+}
+
   async findAll(usuarioId: number) {
 
     const usuario = await this.getUsuario(usuarioId);
@@ -65,7 +107,17 @@ export class ChecklistService {
       throw new NotFoundException('Checklist não encontrado');
     }
 
-    return checklist;
+    return this.prisma.checklist.findFirst({
+  where: {
+    id,
+    empresaId: usuario.empresaId
+  },
+  include: {
+    itens: {
+      orderBy: { ordem: 'asc' }
+    }
+  }
+});
 
   }
 
