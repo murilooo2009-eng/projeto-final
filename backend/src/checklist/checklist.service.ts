@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateChecklistDto } from './dto/create-checklist.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { CreateItemDto } from './dto/create-item.dto';
+import { UpdateItemDto } from './dto/update-item.dto';
 
 @Injectable()
 export class ChecklistService {
@@ -87,6 +88,11 @@ export class ChecklistService {
       },
       orderBy: {
         createdAt: 'desc'
+      },
+      include: {
+        itens: {
+          orderBy: { ordem: 'asc' }
+        }
       }
     });
 
@@ -132,6 +138,44 @@ export class ChecklistService {
 
   }
 
+   async updateItem(
+  checklistId: number,
+  itemId: number,
+  dto: UpdateItemDto,
+  usuarioId: number
+) {
+
+  const usuario = await this.getUsuario(usuarioId);
+
+  const checklist = await this.prisma.checklist.findFirst({
+    where: {
+      id: checklistId,
+      empresaId: usuario.empresaId
+    }
+  });
+
+  if (!checklist) {
+    throw new NotFoundException('Checklist não encontrado');
+  }
+
+  const item = await this.prisma.checklistItem.findFirst({
+    where: {
+      id: itemId,
+      checklistId
+    }
+  });
+
+  if (!item) {
+    throw new NotFoundException('Item não encontrado');
+  }
+
+  return this.prisma.checklistItem.update({
+    where: { id: itemId },
+    data: dto
+  });
+
+}
+
   async remove(id: number, usuarioId: number) {
 
     await this.findOne(id, usuarioId);
@@ -141,5 +185,43 @@ export class ChecklistService {
     });
 
   }
+
+  async removeItem(
+  checklistId: number,
+  itemId: number,
+  usuarioId: number
+) {
+
+  const usuario = await this.getUsuario(usuarioId);
+
+  const checklist = await this.prisma.checklist.findFirst({
+    where: {
+      id: checklistId,
+      empresaId: usuario.empresaId
+    }
+  });
+
+  if (!checklist) {
+    throw new NotFoundException('Checklist não encontrado');
+  }
+
+  const item = await this.prisma.checklistItem.findFirst({
+    where: {
+      id: itemId,
+      checklistId
+    }
+  });
+
+  if (!item) {
+    throw new NotFoundException('Item não encontrado');
+  }
+
+  await this.prisma.checklistItem.delete({
+    where: { id: itemId }
+  });
+
+  return { message: 'Item removido com sucesso' };
+
+}
 
 }
