@@ -30,7 +30,7 @@ export class ChecklistService {
     return this.prisma.checklist.create({
       data: {
         titulo: dto.titulo,
-        periodicidade: dto.periodicidade || 'DIARIO',
+        periodicidade: dto.periodicidade ?? 'diaria',
         empresaId: usuario.empresaId,
       }
     });

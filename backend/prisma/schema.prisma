@@ -35,7 +35,11 @@ model Checklist {
   id            Int     @id @default(autoincrement())
   titulo        String
   ativo         Boolean @default(true)
-  periodicidade String // DIARIO | SEMANAL
+
+  enum Periodicidade {
+  DIARIO
+  SEMANAL
+}
 
   empresaId Int
   empresa   Empresa @relation(fields: [empresaId], references: [id])
