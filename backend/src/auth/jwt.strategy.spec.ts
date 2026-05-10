@@ -1,5 +1,7 @@
+import { describe, it } from 'node:test';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigService } from '@nestjs/config';
+import { expect, jest } from '@jest/globals';
 
 describe('JwtStrategy', () => {
   it('should be defined', () => {

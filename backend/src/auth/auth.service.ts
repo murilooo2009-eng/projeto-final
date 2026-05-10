@@ -49,9 +49,10 @@ async register(data: RegisterDto) {
       };
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
+    const prismaError = error as { code?: string };
 
-    if (error?.code === 'P2002') {
+    if (prismaError.code === 'P2002') {
       throw new BadRequestException('Email já cadastrado');
     }
 
@@ -61,7 +62,7 @@ async register(data: RegisterDto) {
 
 async login(data: LoginDto) {
 
-  const email = data.email.toLowerCase();
+  const email = data.email.trim().toLowerCase();
 
   const usuario = await this.prisma.usuario.findUnique({
     where: { email },

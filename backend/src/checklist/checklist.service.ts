@@ -30,7 +30,7 @@ export class ChecklistService {
     return this.prisma.checklist.create({
       data: {
         titulo: dto.titulo,
-        periodicidade: dto.periodicidade ?? 'diaria',
+        periodicidade: dto.periodicidade ?? 'DIARIO',
         empresaId: usuario.empresaId,
       }
     });
@@ -103,17 +103,6 @@ export class ChecklistService {
     const usuario = await this.getUsuario(usuarioId);
 
     const checklist = await this.prisma.checklist.findFirst({
-      where: {
-        id,
-        empresaId: usuario.empresaId
-      }
-    });
-
-    if (!checklist) {
-      throw new NotFoundException('Checklist não encontrado');
-    }
-
-    return this.prisma.checklist.findFirst({
   where: {
     id,
     empresaId: usuario.empresaId
@@ -125,15 +114,26 @@ export class ChecklistService {
   }
 });
 
+if (!checklist) {
+  throw new NotFoundException('Checklist não encontrado');
+}
+
+return checklist;
+
   }
 
   async update(id: number, dto: UpdateChecklistDto, usuarioId: number) {
 
     await this.findOne(id, usuarioId);
 
+    const data = {
+      ...dto,
+      periodicidade: dto.periodicidade
+    };
+
     return this.prisma.checklist.update({
       where: { id },
-      data: dto
+      data
     });
 
   }

@@ -8,6 +8,7 @@ import {
   Put,
   UseGuards,
   Request,
+  ParseIntPipe,
 } from '@nestjs/common';
 
 import { ChecklistService } from './checklist.service';
@@ -33,7 +34,7 @@ export class ChecklistController {
 
   @Post(':id/itens')
 createItem(
-  @Param('id') id: string,
+  @Param('id', ParseIntPipe) id: number,
   @Body() dto: CreateItemDto,
   @Request() req
 ) {
@@ -51,7 +52,7 @@ createItem(
 
   @Get(':id')
   findOne(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Request() req,
   ) {
     return this.service.findOne(Number(id), req.user.id);
@@ -59,7 +60,7 @@ createItem(
 
   @Put(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateChecklistDto,
     @Request() req,
   ) {
@@ -68,8 +69,8 @@ createItem(
 
   @Put(':id/itens/:idItem')
   updateItem(
-    @Param('id') id: string,
-    @Param('idItem') idItem: string,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('idItem', ParseIntPipe) idItem: number,
     @Body() dto: UpdateItemDto,
     @Request() req,
   ) {
@@ -78,7 +79,7 @@ createItem(
 
   @Delete(':id')
   remove(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Request() req,
   ) {
     return this.service.remove(Number(id), req.user.id);
@@ -86,8 +87,8 @@ createItem(
 
   @Delete(':id/itens/:idItem')
   removeItem(
-    @Param('id') id: string,
-    @Param('idItem') idItem: string,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('idItem', ParseIntPipe) idItem: number,
     @Request() req,
   ) {
     return this.service.removeItem(Number(id), Number(idItem), req.user.id);

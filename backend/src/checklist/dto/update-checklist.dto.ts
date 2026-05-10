@@ -1,4 +1,9 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+
+export enum PeriodicidadeDto {
+  DIARIO = 'DIARIO',
+  SEMANAL = 'SEMANAL'
+}
 
 export class UpdateChecklistDto {
 
@@ -7,8 +12,8 @@ export class UpdateChecklistDto {
   titulo?: string;
 
   @IsOptional()
-  @IsString()
-  periodicidade?: string;
+  @IsEnum(PeriodicidadeDto)
+  periodicidade?: PeriodicidadeDto;
 
   @IsOptional()
   @IsBoolean()

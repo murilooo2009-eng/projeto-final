@@ -4,7 +4,12 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-   url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
+}
+
+enum Periodicidade {
+  DIARIO
+  SEMANAL
 }
 
 model Empresa {
@@ -32,14 +37,10 @@ model Usuario {
 }
 
 model Checklist {
-  id            Int     @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   titulo        String
-  ativo         Boolean @default(true)
-
-  enum Periodicidade {
-  DIARIO
-  SEMANAL
-}
+  ativo         Boolean       @default(true)
+  periodicidade Periodicidade @default(DIARIO)
 
   empresaId Int
   empresa   Empresa @relation(fields: [empresaId], references: [id])

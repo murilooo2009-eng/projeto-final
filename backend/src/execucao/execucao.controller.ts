@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Request, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Request, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ExecucaoService } from './execucao.service';
 import { CreateExecucaoDto } from './dto/create-execucao.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -25,7 +25,7 @@ findAll(@Request() req) {
 
 @Get(':id')
 findOne(
-  @Param('id') id: string,
+  @Param('id', ParseIntPipe) id: number,
   @Request() req
 ) {
   return this.service.findOne(Number(id), req.user.id);

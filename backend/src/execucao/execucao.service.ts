@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExecucaoDto } from './dto/create-execucao.dto';
 
@@ -30,6 +30,30 @@ export class ExecucaoService {
     if (!checklist) {
       throw new NotFoundException('Checklist não encontrado');
     }
+
+    const itemIdsChecklist = new Set(
+      checklist.itens.map((i) => i.id)
+    );
+
+    for (const item of dto.itens) {
+      if (!itemIdsChecklist.has(item.itemId)) {
+        throw new BadRequestException(
+          `Item ${item.itemId} não pertence ao checklist`
+        );
+      }
+    }
+
+    const ids = dto.itens.map(i => i.itemId);
+
+const duplicados = ids.filter(
+  (id, idx) => ids.indexOf(id) !== idx
+);
+
+if (duplicados.length) {
+  throw new BadRequestException(
+    'Itens duplicados na execução'
+  );
+}
 
     const execucao = await this.prisma.execucaoChecklist.create({
       data: {

@@ -1,21 +1,26 @@
-import { IsArray, IsInt, IsBoolean } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsBoolean,
+  ValidateNested
+} from 'class-validator';
+
+import { Type } from 'class-transformer';
 
 export class CreateExecucaoItemDto {
-
   @IsInt()
-  itemId: number;
+  itemId!: number;
 
   @IsBoolean()
-  concluido: boolean;
-
+  concluido!: boolean;
 }
 
 export class CreateExecucaoDto {
-
   @IsInt()
-  checklistId: number;
+  checklistId!: number;
 
   @IsArray()
-  itens: CreateExecucaoItemDto[];
-
+  @ValidateNested({ each: true })
+  @Type(() => CreateExecucaoItemDto)
+  itens!: CreateExecucaoItemDto[];
 }
