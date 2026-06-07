@@ -12,6 +12,17 @@ enum Periodicidade {
   SEMANAL
 }
 
+enum Role {
+  GERENTE
+  FUNCIONARIO
+}
+
+enum ExecucaoStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDA
+}
+
 model Empresa {
   id   Int    @id @default(autoincrement())
   nome String
@@ -27,6 +38,8 @@ model Usuario {
   nome      String
   email     String @unique
   senhaHash String
+
+  role        Role @default(FUNCIONARIO)
 
   empresaId Int
   empresa   Empresa @relation(fields: [empresaId], references: [id])
@@ -66,6 +79,10 @@ model ChecklistItem {
 model ExecucaoChecklist {
   id           Int      @id @default(autoincrement())
   dataExecucao DateTime
+
+  status ExecucaoStatus @default(PENDENTE)
+
+  percentualConclusao Int @default(0)
 
   checklistId Int
   checklist   Checklist @relation(fields: [checklistId], references: [id])

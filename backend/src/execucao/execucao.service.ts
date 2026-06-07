@@ -45,21 +45,38 @@ export class ExecucaoService {
 
     const ids = dto.itens.map(i => i.itemId);
 
-const duplicados = ids.filter(
-  (id, idx) => ids.indexOf(id) !== idx
-);
+    const duplicados = ids.filter(
+      (id, idx) => ids.indexOf(id) !== idx
+    );
 
-if (duplicados.length) {
-  throw new BadRequestException(
-    'Itens duplicados na execução'
-  );
-}
+    if (duplicados.length) {
+      throw new BadRequestException(
+        'Itens duplicados na execução'
+      );
+    }
+
+    const totalItens = dto.itens.length;
+    const itensConcluidos = dto.itens.filter((item) => item.concluido).length;
+
+    const percentual = totalItens > 0
+      ? Math.round((itensConcluidos * 100) / totalItens)
+      : 0;
+
+    let status = 'PENDENTE';
+
+if(percentual === 100)
+ status = 'CONCLUIDA';
+
+if(percentual > 0 && percentual < 100)
+ status = 'EM_ANDAMENTO';
 
     const execucao = await this.prisma.execucaoChecklist.create({
       data: {
         checklistId: dto.checklistId,
         usuarioId: usuarioId,
         dataExecucao: new Date(),
+        status: status,
+        percentualConclusao: percentual,
         itens: {
           create: dto.itens.map((item) => ({
             itemId: item.itemId,

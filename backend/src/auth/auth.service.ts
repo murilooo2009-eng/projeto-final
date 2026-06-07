@@ -42,10 +42,6 @@ async register(data: RegisterDto) {
         id: usuario.id,
         nome: usuario.nome,
         email: usuario.email,
-        access_token: this.jwtService.sign({
-          sub: usuario.id,
-          empresaId: usuario.empresaId
-        })
       };
     });
 
@@ -71,7 +67,8 @@ async login(data: LoginDto) {
     email: true,
     senhaHash: true,
     empresaId: true,
-    nome: true
+    nome: true,
+    role: true
   }
   });
 
@@ -87,7 +84,8 @@ async login(data: LoginDto) {
 
   const payload = {
     sub: usuario.id,
-    empresaId: usuario.empresaId
+    empresaId: usuario.empresaId,
+    role: usuario.role
   };
 
   return {

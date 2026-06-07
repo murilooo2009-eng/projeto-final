@@ -1,4 +1,9 @@
-import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
+
+export enum RoleDto {
+  FUNCIONARIO = 'FUNCIONARIO',
+  GERENTE = 'GERENTE'
+}
 
 export class RegisterDto {
 
@@ -15,4 +20,8 @@ export class RegisterDto {
 
   @IsNotEmpty({ message: 'Nome da empresa é obrigatório' })
   nomeEmpresa!: string;
+
+  @IsEnum(RoleDto, { message: 'Cargo deve ser FUNCIONARIO ou GERENTE' })
+  @IsOptional()
+  cargo?: RoleDto;
 }
