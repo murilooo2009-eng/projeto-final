@@ -19,7 +19,6 @@ enum Role {
 
 enum ExecucaoStatus {
   PENDENTE
-  EM_ANDAMENTO
   CONCLUIDA
 }
 

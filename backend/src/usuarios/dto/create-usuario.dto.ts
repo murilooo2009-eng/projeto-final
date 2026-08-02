@@ -28,5 +28,5 @@ export class CreateUsuarioDto {
 
   @IsOptional()
   @IsEnum(RoleDto, { message: 'Cargo deve ser FUNCIONARIO ou GERENTE' })
-  cargo?: RoleDto;
+  role?: RoleDto;
 }

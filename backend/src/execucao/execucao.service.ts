@@ -20,16 +20,48 @@ export class ExecucaoService {
     const checklist = await this.prisma.checklist.findFirst({
       where: {
         id: dto.checklistId,
-        empresaId: usuario.empresaId
+        empresaId: usuario.empresaId,
+        ativo: true
       },
       include: {
-        itens: true
+        itens: {
+          orderBy: {
+            id: 'asc'
+          }
+        }
       }
     });
 
     if (!checklist) {
       throw new NotFoundException('Checklist não encontrado');
     }
+
+    const itensEnviados =
+  new Map(
+    dto.itens.map(
+      (item) => [
+        item.itemId,
+        item,
+      ],
+    ),
+  );
+
+    const idsRecebidos =
+  dto.itens.map(
+    item => item.itemId,
+  );
+
+const idsUnicos =
+  new Set(idsRecebidos);
+
+if (
+  idsUnicos.size !==
+  idsRecebidos.length
+) {
+  throw new BadRequestException(
+    'Existem itens duplicados na execução',
+  );
+}
 
     const itemIdsChecklist = new Set(
       checklist.itens.map((i) => i.id)
@@ -55,20 +87,110 @@ export class ExecucaoService {
       );
     }
 
-    const totalItens = dto.itens.length;
-    const itensConcluidos = dto.itens.filter((item) => item.concluido).length;
+    const idsDoChecklist =
+  checklist.itens.map(
+    item => item.id,
+  );
 
-    const percentual = totalItens > 0
-      ? Math.round((itensConcluidos * 100) / totalItens)
-      : 0;
+  const itensAusentes =
+  idsDoChecklist.filter(
+    id =>
+      !itensEnviados.has(id),
+  );
 
-    let status = 'PENDENTE';
+  if (
+  itensAusentes.length > 0
+) {
+  throw new BadRequestException(
+    'Todos os itens do checklist devem ser enviados',
+  );
+}
 
-if(percentual === 100)
- status = 'CONCLUIDA';
+const idsValidos =
+  new Set(
+    idsDoChecklist,
+  );
 
-if(percentual > 0 && percentual < 100)
- status = 'EM_ANDAMENTO';
+const itensInvalidos =
+  idsRecebidos.filter(
+    id =>
+      !idsValidos.has(id),
+  );
+
+  if (
+  itensInvalidos.length > 0
+) {
+  throw new BadRequestException(
+    'A execução contém itens que não pertencem ao checklist',
+  );
+}
+
+const obrigatoriosPendentes =
+  checklist.itens.filter(
+    item => {
+      if (!item.obrigatorio) {
+        return false;
+      }
+
+      const itemExecutado =
+        itensEnviados.get(
+          item.id,
+        );
+
+      return (
+        !itemExecutado ||
+        !itemExecutado.concluido
+      );
+    },
+  );
+
+  if (
+  obrigatoriosPendentes.length > 0
+) {
+  throw new BadRequestException(
+    'Não é possível concluir o checklist porque existem itens obrigatórios pendentes',
+  );
+}
+
+const totalItens =
+  checklist.itens.length;
+
+  const itensConcluidos =
+  checklist.itens.filter(
+    item => {
+      const execucao =
+        itensEnviados.get(
+          item.id,
+        );
+
+      return (
+        execucao?.concluido ===
+        true
+      );
+    },
+  ).length;
+
+  const percentual =
+  totalItens === 0
+    ? 0
+    : Number(
+        (
+          itensConcluidos /
+          totalItens *
+          100
+        ).toFixed(2),
+      );
+
+      const possuiObrigatoriosPendentes =
+  obrigatoriosPendentes.length > 0;
+
+const status =
+  possuiObrigatoriosPendentes
+    ? 'PENDENTE'
+    : percentual === 100
+      ? 'CONCLUIDA'
+      : 'PENDENTE';
+    
 
     const execucao = await this.prisma.execucaoChecklist.create({
       data: {

@@ -20,7 +20,7 @@ export class UsuariosService {
      nome: dto.nome,
      email: dto.email,
      senhaHash,
-     cargo: dto.cargo ?? 'FUNCIONARIO',
+     role: dto.role ?? 'FUNCIONARIO',
      empresaId
    }
  });

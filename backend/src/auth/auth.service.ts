@@ -34,14 +34,19 @@ async register(data: RegisterDto) {
           nome: data.nome,
           email: email,
           senhaHash,
-          empresaId: empresa.id
+          empresaId: empresa.id,
+          role: 'GERENTE'
         }
       });
 
       return {
-        id: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email,
+        empresa,
+        usuario: {
+          id: usuario.id,
+          nome: usuario.nome,
+          email: usuario.email,
+          role: usuario.role
+        }
       };
     });
 
@@ -89,7 +94,7 @@ async login(data: LoginDto) {
   };
 
   return {
-    access_token: this.jwtService.sign(payload)
+    access_token: this.jwtService.signAsync(payload)
   };
 }
 }

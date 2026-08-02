@@ -8,6 +8,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { RolesGuard } from './auth/roles.guard';
 
 @Module({
   imports: [
@@ -35,6 +36,11 @@ import { DashboardModule } from './dashboard/dashboard.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    }
   ],
 })
 export class AppModule {}
