@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it } from '@jest/globals';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigService } from '@nestjs/config';
 import { expect, jest } from '@jest/globals';

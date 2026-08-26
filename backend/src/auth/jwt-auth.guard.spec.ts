@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it } from '@jest/globals';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { expect } from '@jest/globals';
 

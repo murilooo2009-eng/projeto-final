@@ -1,12 +1,16 @@
-import { IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
 
-export enum PeriodicidadeDto {
-  DIARIO = 'DIARIO',
-  SEMANAL = 'SEMANAL'
-}
+import {
+  PeriodicidadeDto,
+} from './create-checklist.dto';
 
 export class UpdateChecklistDto {
-
   @IsOptional()
   @IsString()
   titulo?: string;
@@ -19,4 +23,15 @@ export class UpdateChecklistDto {
   @IsBoolean()
   ativo?: boolean;
 
+  @IsOptional()
+  @Matches(
+    /^([01]\d|2[0-3]):[0-5]\d$/,
+  )
+  horarioDisponivelInicio?: string;
+
+  @IsOptional()
+  @Matches(
+    /^([01]\d|2[0-3]):[0-5]\d$/,
+  )
+  horarioDisponivelFim?: string;
 }

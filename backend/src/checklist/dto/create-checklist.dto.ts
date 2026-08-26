@@ -1,19 +1,42 @@
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
-import { IsEnum } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
 
 export enum PeriodicidadeDto {
   DIARIO = 'DIARIO',
-  SEMANAL = 'SEMANAL'
+  SEMANAL = 'SEMANAL',
 }
 
 export class CreateChecklistDto {
-
   @IsNotEmpty()
   @IsString()
   titulo!: string;
 
-  @IsOptional()
   @IsEnum(PeriodicidadeDto)
-  periodicidade?: PeriodicidadeDto;
+  periodicidade!: PeriodicidadeDto;
 
+  @IsOptional()
+  @Matches(
+    /^([01]\d|2[0-3]):[0-5]\d$/,
+    {
+      message:
+        'Horário deve estar no formato HH:mm',
+    },
+  )
+  horarioDisponivelInicio?: string;
+
+  @IsOptional()
+  @Matches(
+    /^([01]\d|2[0-3]):[0-5]\d$/,
+    {
+      message:
+        'Horário deve estar no formato HH:mm',
+    },
+  )
+  horarioDisponivelFim?: string;
 }

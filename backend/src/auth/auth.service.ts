@@ -1,100 +1,166 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { RegisterDto } from './dto/register.dto';
-import * as bcrypt from 'bcrypt';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+
 import { JwtService } from '@nestjs/jwt';
-import { BadRequestException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+
+import * as bcrypt from 'bcrypt';
+
+import { PrismaService } from '../prisma/prisma.service';
+
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-   private prisma: PrismaService,
-  private jwtService: JwtService
-) {}
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-async register(data: RegisterDto) {
+  async register(
+    data: RegisterDto,
+  ) {
+    const email =
+      data.email
+        .trim()
+        .toLowerCase();
 
-  const email = data.email.trim().toLowerCase();
+    const senhaHash =
+      await bcrypt.hash(
+        data.senha,
+        12,
+      );
 
-  const senhaHash = await bcrypt.hash(data.senha, 10);
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const empresa =
+            await tx.empresa.create({
+              data: {
+                nome:
+                  data.nomeEmpresa.trim(),
+              },
+            });
 
-  try {
+          const usuario =
+            await tx.usuario.create({
+              data: {
+                nome:
+                  data.nome.trim(),
 
-    return await this.prisma.$transaction(async (tx) => {
+                email,
 
-      const empresa = await tx.empresa.create({
-        data: {
-          nome: data.nomeEmpresa
-        }
-      });
+                senhaHash,
 
-      const usuario = await tx.usuario.create({
-        data: {
-          nome: data.nome,
-          email: email,
-          senhaHash,
-          empresaId: empresa.id,
-          role: 'GERENTE'
-        }
-      });
+                perfil: 'ADMIN',
 
-      return {
-        empresa,
-        usuario: {
-          id: usuario.id,
-          nome: usuario.nome,
-          email: usuario.email,
-          role: usuario.role
-        }
-      };
-    });
+                empresaId:
+                  empresa.id,
+              },
+            });
 
-  } catch (error: unknown) {
-    const prismaError = error as { code?: string };
+          return {
+            empresa: {
+              id: empresa.id,
+              nome: empresa.nome,
+            },
 
-    if (prismaError.code === 'P2002') {
-      throw new BadRequestException('Email já cadastrado');
+            usuario: {
+              id: usuario.id,
+              nome: usuario.nome,
+              email: usuario.email,
+              perfil: usuario.perfil,
+              ativo: usuario.ativo,
+              empresaId:
+                usuario.empresaId,
+            },
+          };
+        },
+      );
+    } catch (error) {
+      const prismaError =
+        error as {
+          code?: string;
+        };
+
+      if (
+        prismaError.code ===
+        'P2002'
+      ) {
+        throw new BadRequestException(
+          'E-mail já cadastrado',
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  async login(
+    data: LoginDto,
+  ) {
+    const email =
+      data.email
+        .trim()
+        .toLowerCase();
+
+    const usuario =
+      await this.prisma.usuario.findUnique(
+        {
+          where: {
+            email,
+          },
+        },
+      );
+
+    if (
+      !usuario ||
+      !usuario.ativo
+    ) {
+      throw new UnauthorizedException(
+        'Credenciais inválidas',
+      );
     }
 
-    throw error;
+    const senhaValida =
+      await bcrypt.compare(
+        data.senha,
+        usuario.senhaHash,
+      );
+
+    if (!senhaValida) {
+      throw new UnauthorizedException(
+        'Credenciais inválidas',
+      );
+    }
+
+    const payload = {
+      sub: usuario.id,
+      empresaId:
+        usuario.empresaId,
+      perfil:
+        usuario.perfil,
+    };
+
+    const accessToken =
+      await this.jwtService.signAsync(
+        payload,
+      );
+
+    return {
+      access_token: accessToken,
+
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        perfil: usuario.perfil,
+        empresaId:
+          usuario.empresaId,
+      },
+    };
   }
-}
-
-async login(data: LoginDto) {
-
-  const email = data.email.trim().toLowerCase();
-
-  const usuario = await this.prisma.usuario.findUnique({
-    where: { email },
-    select: {
-    id: true,
-    email: true,
-    senhaHash: true,
-    empresaId: true,
-    nome: true,
-    role: true
-  }
-  });
-
-  if (!usuario) {
-    throw new UnauthorizedException('Credenciais inválidas');
-  }
-
-  const senhaValida = await bcrypt.compare(data.senha, usuario.senhaHash);
-
-  if (!senhaValida) {
-    throw new UnauthorizedException('Credenciais inválidas');
-  }
-
-  const payload = {
-    sub: usuario.id,
-    empresaId: usuario.empresaId,
-    role: usuario.role
-  };
-
-  return {
-    access_token: this.jwtService.signAsync(payload)
-  };
-}
 }

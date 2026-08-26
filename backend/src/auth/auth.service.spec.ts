@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { describe, beforeEach, it } from 'node:test';
+import { describe, beforeEach, it } from '@jest/globals';
 import { expect } from '@jest/globals';
 
 describe('AuthService', () => {

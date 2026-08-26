@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChecklistService } from './checklist.service';
-import { beforeEach, describe, it } from 'node:test';
+import { beforeEach, describe, it } from '@jest/globals';
 import { expect } from '@jest/globals';
 
 describe('ChecklistService', () => {

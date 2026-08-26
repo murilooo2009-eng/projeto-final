@@ -1,5 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
+
 import { CreateChecklistDto } from './dto/create-checklist.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { CreateItemDto } from './dto/create-item.dto';
@@ -7,221 +12,268 @@ import { UpdateItemDto } from './dto/update-item.dto';
 
 @Injectable()
 export class ChecklistService {
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
 
-  constructor(private prisma: PrismaService) {}
-
-  private async getUsuario(usuarioId: number) {
-
-    const usuario = await this.prisma.usuario.findFirst({
-      where: { id: usuarioId },
-      select: { empresaId: true }
-    });
-
-    if (!usuario) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-    return usuario;
-  }
-
-  async create(dto: CreateChecklistDto, usuarioId: number) {
-
-    const usuario = await this.getUsuario(usuarioId);
-
+  async create(
+    dto: CreateChecklistDto,
+    empresaId: number,
+  ) {
     return this.prisma.checklist.create({
       data: {
-        titulo: dto.titulo,
-        periodicidade: dto.periodicidade ?? 'DIARIO',
-        empresaId: usuario.empresaId,
-      }
-    });
+        titulo:
+          dto.titulo.trim(),
 
+        periodicidade:
+          dto.periodicidade ?? 'DIARIO',
+
+        horarioDisponivelInicio:
+          dto.horarioDisponivelInicio,
+
+        horarioDisponivelFim:
+          dto.horarioDisponivelFim,
+
+        empresaId,
+      },
+
+      include: {
+        itens: true,
+      },
+    });
+  }
+
+  async findAll(
+    usuarioId: number,
+    empresaId: number,
+  ) {
+    return this.prisma.checklist.findMany({
+      where: {
+        empresaId,
+      },
+
+      orderBy: {
+        createdAt: 'desc',
+      },
+
+      include: {
+        itens: {
+          orderBy: {
+            ordem: 'asc',
+          },
+        },
+      },
+    });
+  }
+
+  async findOne(
+    id: number,
+    usuarioId: number,
+    empresaId: number,
+  ) {
+    const checklist =
+      await this.prisma.checklist.findFirst({
+        where: {
+          id,
+          empresaId,
+        },
+
+        include: {
+          itens: {
+            orderBy: {
+              ordem: 'asc',
+            },
+          },
+        },
+      });
+
+    if (!checklist) {
+      throw new NotFoundException(
+        'Checklist não encontrado',
+      );
+    }
+
+    return checklist;
+  }
+
+  async update(
+    id: number,
+    dto: UpdateChecklistDto,
+    empresaId: number,
+  ) {
+    await this.findOne(
+      id,
+      0,
+      empresaId,
+    );
+
+    return this.prisma.checklist.update({
+      where: {
+        id,
+      },
+
+      data: {
+        titulo:
+          dto.titulo?.trim(),
+
+        periodicidade:
+          dto.periodicidade,
+
+        ativo:
+          dto.ativo,
+
+        horarioDisponivelInicio:
+          dto.horarioDisponivelInicio,
+
+        horarioDisponivelFim:
+          dto.horarioDisponivelFim,
+      },
+    });
   }
 
   async createItem(
-  checklistId: number,
-  dto: CreateItemDto,
-  usuarioId: number
-) {
+    checklistId: number,
+    dto: CreateItemDto,
+    empresaId: number,
+  ) {
+    await this.findOne(
+      checklistId,
+      0,
+      empresaId,
+    );
 
-  const usuario = await this.getUsuario(usuarioId);
+    const ultimo =
+      await this.prisma.itemChecklist.findFirst({
+        where: {
+          checklistId,
+        },
 
-  if (!usuario) {
-    throw new NotFoundException('Usuário não encontrado');
+        orderBy: {
+          ordem: 'desc',
+        },
+      });
+
+    const ordem =
+      dto.ordem ??
+      (ultimo
+        ? ultimo.ordem + 1
+        : 1);
+
+    return this.prisma.itemChecklist.create({
+      data: {
+        descricao:
+          dto.descricao.trim(),
+
+        ordem,
+
+        obrigatorio:
+          dto.obrigatorio ?? false,
+
+        checklistId,
+      },
+    });
   }
 
-  const checklist = await this.prisma.checklist.findFirst({
-    where: {
-      id: checklistId,
-      empresaId: usuario.empresaId
+  async updateItem(
+    checklistId: number,
+    itemId: number,
+    dto: UpdateItemDto,
+    empresaId: number,
+  ) {
+    await this.findOne(
+      checklistId,
+      0,
+      empresaId,
+    );
+
+    const item =
+      await this.prisma.itemChecklist.findFirst({
+        where: {
+          id: itemId,
+          checklistId,
+        },
+      });
+
+    if (!item) {
+      throw new NotFoundException(
+        'Item não encontrado',
+      );
     }
-  });
 
-  if (!checklist) {
-    throw new NotFoundException('Checklist não encontrado');
-  }
-
-  const ultimoItem = await this.prisma.checklistItem.findFirst({
-    where: { checklistId },
-    orderBy: { ordem: 'desc' }
-  });
-
-  const ordem = dto.ordem ?? (ultimoItem ? ultimoItem.ordem + 1 : 1);
-
-  return this.prisma.checklistItem.create({
-    data: {
-      descricao: dto.descricao,
-      obrigatorio: dto.obrigatorio ?? false,
-      ordem,
-      checklistId
-    }
-  });
-
-}
-
-  async findAll(usuarioId: number) {
-
-    const usuario = await this.getUsuario(usuarioId);
-
-    return this.prisma.checklist.findMany({
+    return this.prisma.itemChecklist.update({
       where: {
-        empresaId: usuario.empresaId
+        id: itemId,
       },
-      orderBy: {
-        createdAt: 'desc'
+
+      data: {
+        descricao:
+          dto.descricao?.trim(),
+
+        ordem:
+          dto.ordem,
+
+        obrigatorio:
+          dto.obrigatorio,
       },
-      include: {
-        itens: {
-          orderBy: { ordem: 'asc' }
-        }
-      }
     });
-
-  }
-
-  async findOne(id: number, usuarioId: number) {
-
-    const usuario = await this.getUsuario(usuarioId);
-
-    const checklist = await this.prisma.checklist.findFirst({
-  where: {
-    id,
-    empresaId: usuario.empresaId
-  },
-  include: {
-    itens: {
-      orderBy: { ordem: 'asc' }
-    }
-  }
-});
-
-if (!checklist) {
-  throw new NotFoundException('Checklist não encontrado');
-}
-
-return checklist;
-
-  }
-
-  async update(id: number, dto: UpdateChecklistDto, usuarioId: number) {
-
-    await this.findOne(id, usuarioId);
-
-    const data = {
-      ...dto,
-      periodicidade: dto.periodicidade
-    };
-
-    return this.prisma.checklist.update({
-      where: { id },
-      data
-    });
-
-  }
-
-   async updateItem(
-  checklistId: number,
-  itemId: number,
-  dto: UpdateItemDto,
-  usuarioId: number
-) {
-
-  const usuario = await this.getUsuario(usuarioId);
-
-  const checklist = await this.prisma.checklist.findFirst({
-    where: {
-      id: checklistId,
-      empresaId: usuario.empresaId
-    }
-  });
-
-  if (!checklist) {
-    throw new NotFoundException('Checklist não encontrado');
-  }
-
-  const item = await this.prisma.checklistItem.findFirst({
-    where: {
-      id: itemId,
-      checklistId
-    }
-  });
-
-  if (!item) {
-    throw new NotFoundException('Item não encontrado');
-  }
-
-  return this.prisma.checklistItem.update({
-    where: { id: itemId },
-    data: dto
-  });
-
-}
-
-  async remove(id: number, usuarioId: number) {
-
-    await this.findOne(id, usuarioId);
-
-    return this.prisma.checklist.delete({
-      where: { id }
-    });
-
   }
 
   async removeItem(
-  checklistId: number,
-  itemId: number,
-  usuarioId: number
-) {
+    checklistId: number,
+    itemId: number,
+    empresaId: number,
+  ) {
+    await this.findOne(
+      checklistId,
+      0,
+      empresaId,
+    );
 
-  const usuario = await this.getUsuario(usuarioId);
+    const item =
+      await this.prisma.itemChecklist.findFirst({
+        where: {
+          id: itemId,
+          checklistId,
+        },
+      });
 
-  const checklist = await this.prisma.checklist.findFirst({
-    where: {
-      id: checklistId,
-      empresaId: usuario.empresaId
+    if (!item) {
+      throw new NotFoundException(
+        'Item não encontrado',
+      );
     }
-  });
 
-  if (!checklist) {
-    throw new NotFoundException('Checklist não encontrado');
+    await this.prisma.itemChecklist.delete({
+      where: {
+        id: itemId,
+      },
+    });
+
+    return {
+      message:
+        'Item removido com sucesso',
+    };
   }
 
-  const item = await this.prisma.checklistItem.findFirst({
-    where: {
-      id: itemId,
-      checklistId
-    }
-  });
+  async remove(
+    id: number,
+    empresaId: number,
+  ) {
+    await this.findOne(
+      id,
+      0,
+      empresaId,
+    );
 
-  if (!item) {
-    throw new NotFoundException('Item não encontrado');
+    await this.prisma.checklist.delete({
+      where: {
+        id,
+      },
+    });
+
+    return {
+      message:
+        'Checklist removido com sucesso',
+    };
   }
-
-  await this.prisma.checklistItem.delete({
-    where: { id: itemId }
-  });
-
-  return { message: 'Item removido com sucesso' };
-
-}
-
 }

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
-import { describe, beforeEach, it } from 'node:test';
+import { describe, beforeEach, it } from '@jest/globals';
 import { expect } from '@jest/globals';
 
 describe('AuthController', () => {

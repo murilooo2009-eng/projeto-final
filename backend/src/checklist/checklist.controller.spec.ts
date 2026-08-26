@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChecklistController } from './checklist.controller';
-import { beforeEach, describe, it } from 'node:test';
+import { beforeEach, describe, it } from '@jest/globals';
 import { expect } from '@jest/globals';
 
 describe('ChecklistController', () => {

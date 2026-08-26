@@ -4,16 +4,12 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  MinLength
+  MinLength,
 } from 'class-validator';
 
-export enum RoleDto {
-  FUNCIONARIO = 'FUNCIONARIO',
-  GERENTE = 'GERENTE'
-}
+import { Perfil } from '@prisma/client';
 
 export class CreateUsuarioDto {
-
   @IsNotEmpty()
   @IsString()
   nome!: string;
@@ -22,11 +18,11 @@ export class CreateUsuarioDto {
   @IsEmail()
   email!: string;
 
-  @IsNotEmpty()
-  @MinLength(6)
-  senha!: string;
+  @IsOptional()
+  @MinLength(8)
+  senha?: string;
 
   @IsOptional()
-  @IsEnum(RoleDto, { message: 'Cargo deve ser FUNCIONARIO ou GERENTE' })
-  role?: RoleDto;
+  @IsEnum(Perfil)
+  perfil?: Perfil;
 }

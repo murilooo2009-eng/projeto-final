@@ -7,100 +7,123 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Perfil {
+  ADMIN
+  COLABORADOR
+}
+
 enum Periodicidade {
   DIARIO
   SEMANAL
 }
 
-enum Role {
-  GERENTE
-  FUNCIONARIO
-}
-
-enum ExecucaoStatus {
-  PENDENTE
+enum StatusExecucao {
+  EM_ANDAMENTO
   CONCLUIDA
+  CANCELADA
 }
 
 model Empresa {
-  id   Int    @id @default(autoincrement())
-  nome String
+  id        Int      @id @default(autoincrement())
+  nome      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   usuarios   Usuario[]
   checklists Checklist[]
+  execucoes  ExecucaoChecklist[]
 
-  createdAt DateTime @default(now())
+  @@index([nome])
 }
 
 model Usuario {
-  id        Int    @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   nome      String
-  email     String @unique
+  email     String   @unique
   senhaHash String
-
-  role        Role @default(FUNCIONARIO)
-
+  perfil    Perfil
+  ativo     Boolean  @default(true)
   empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  empresa   Empresa             @relation(fields: [empresaId], references: [id], onDelete: Restrict)
   execucoes ExecucaoChecklist[]
 
-  createdAt DateTime @default(now())
+  @@index([empresaId])
+  @@index([empresaId, ativo])
 }
 
 model Checklist {
-  id            Int           @id @default(autoincrement())
-  titulo        String
-  ativo         Boolean       @default(true)
-  periodicidade Periodicidade @default(DIARIO)
+  id                      Int           @id @default(autoincrement())
+  titulo                  String
+  periodicidade           Periodicidade
+  ativo                   Boolean       @default(true)
+  horarioDisponivelInicio String?
+  horarioDisponivelFim    String?
+  empresaId               Int
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
 
-  empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
-
-  itens     ChecklistItem[]
+  empresa   Empresa             @relation(fields: [empresaId], references: [id], onDelete: Restrict)
+  itens     ItemChecklist[]
   execucoes ExecucaoChecklist[]
 
-  createdAt DateTime @default(now())
+  @@index([empresaId])
+  @@index([empresaId, ativo])
+  @@index([empresaId, periodicidade])
 }
 
-model ChecklistItem {
-  id          Int     @id @default(autoincrement())
+model ItemChecklist {
+  id          Int      @id @default(autoincrement())
   descricao   String
   ordem       Int
-  obrigatorio Boolean @default(false)
-
+  obrigatorio Boolean  @default(false)
   checklistId Int
-  checklist   Checklist @relation(fields: [checklistId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
+  checklist Checklist      @relation(fields: [checklistId], references: [id], onDelete: Cascade)
   execucoes ExecucaoItem[]
+
+  @@unique([checklistId, ordem])
+  @@index([checklistId])
 }
 
 model ExecucaoChecklist {
-  id           Int      @id @default(autoincrement())
-  dataExecucao DateTime
+  id           Int            @id @default(autoincrement())
+  checklistId  Int
+  usuarioId    Int
+  empresaId    Int
+  status       StatusExecucao @default(EM_ANDAMENTO)
+  iniciadaEm   DateTime       @default(now())
+  finalizadaEm DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
-  status ExecucaoStatus @default(PENDENTE)
+  checklist Checklist      @relation(fields: [checklistId], references: [id], onDelete: Restrict)
+  usuario   Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  empresa   Empresa        @relation(fields: [empresaId], references: [id], onDelete: Restrict)
+  itens     ExecucaoItem[]
 
-  percentualConclusao Int @default(0)
-
-  checklistId Int
-  checklist   Checklist @relation(fields: [checklistId], references: [id])
-
-  usuarioId Int
-  usuario   Usuario @relation(fields: [usuarioId], references: [id])
-
-  itens ExecucaoItem[]
-
-  createdAt DateTime @default(now())
+  @@index([empresaId])
+  @@index([empresaId, status])
+  @@index([usuarioId])
+  @@index([checklistId])
+  @@index([iniciadaEm])
 }
 
 model ExecucaoItem {
-  id        Int     @id @default(autoincrement())
-  concluido Boolean
+  id              Int       @id @default(autoincrement())
+  execucaoId      Int
+  itemChecklistId Int
+  concluido       Boolean   @default(false)
+  concluidoEm     DateTime?
 
-  execucaoId Int
-  execucao   ExecucaoChecklist @relation(fields: [execucaoId], references: [id])
+  execucao      ExecucaoChecklist @relation(fields: [execucaoId], references: [id], onDelete: Cascade)
+  itemChecklist ItemChecklist     @relation(fields: [itemChecklistId], references: [id], onDelete: Restrict)
 
-  itemId Int
-  item   ChecklistItem @relation(fields: [itemId], references: [id])
+  @@unique([execucaoId, itemChecklistId])
+  @@index([execucaoId])
+  @@index([itemChecklistId])
 }
