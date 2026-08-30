@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
-import { describe, beforeEach, it } from '@jest/globals';
-import { expect } from '@jest/globals';
+import { AuthService } from './auth.service';
+import { describe, beforeEach, it, expect } from '@jest/globals';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -9,6 +9,7 @@ describe('AuthController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
+      providers: [{ provide: AuthService, useValue: { register: () => {}, login: () => {} } }],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
