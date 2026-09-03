@@ -109,7 +109,7 @@ export function UsuariosPage() {
                     <div className="row-actions">
                       <button
                         type="button"
-                        className="icon-btn"
+                        className="icon-btn icon-btn-edit"
                         title="Editar"
                         onClick={() => navigate(`/usuarios/${item.id}/editar`)}
                       >

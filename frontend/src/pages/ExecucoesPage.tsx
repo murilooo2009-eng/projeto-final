@@ -4,6 +4,7 @@ import { Button } from '../components/Button';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { IconPlay } from '../components/Icon';
+import { Input } from '../components/Input';
 import { LoadingState } from '../components/LoadingState';
 import { Modal } from '../components/Modal';
 import { Pagination } from '../components/Pagination';
@@ -14,7 +15,8 @@ import { formatDateTime, STATUS_EXECUCAO_LABEL } from '../lib/format';
 import { useNavigate } from '../lib/router';
 import { listarChecklists } from '../services/checklists';
 import { iniciarExecucao, listarExecucoes } from '../services/execucoes';
-import type { Checklist, ExecucaoResumo, StatusExecucao } from '../types';
+import { listarUsuarios } from '../services/usuarios';
+import type { Checklist, ExecucaoResumo, StatusExecucao, Usuario } from '../types';
 
 function statusTone(status: StatusExecucao) {
   if (status === 'CONCLUIDA') return 'success' as const;
@@ -31,14 +33,22 @@ export function ExecucoesPage() {
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [statusFiltro, setStatusFiltro] = useState<StatusExecucao | ''>('');
+  const [checklistFiltro, setChecklistFiltro] = useState<string>('');
+  const [usuarioFiltro, setUsuarioFiltro] = useState<string>('');
+  const [dataInicioFiltro, setDataInicioFiltro] = useState<string>('');
+  const [dataFimFiltro, setDataFimFiltro] = useState<string>('');
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
+  const [checklistsFiltro, setChecklistsFiltro] = useState<Checklist[]>([]);
+  const [usuariosFiltro, setUsuariosFiltro] = useState<Usuario[]>([]);
+
   const [modalAberto, setModalAberto] = useState(false);
-  const [checklistsDisponiveis, setChecklistsDisponiveis] = useState<Checklist[]>([]);
   const [checklistEscolhido, setChecklistEscolhido] = useState<string>('');
   const [iniciando, setIniciando] = useState(false);
   const [erroModal, setErroModal] = useState<string | null>(null);
+
+  const checklistsDisponiveis = checklistsFiltro.filter((checklist) => checklist.ativo);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -48,6 +58,10 @@ export function ExecucoesPage() {
         page: pagina,
         limit: 10,
         status: statusFiltro || undefined,
+        checklistId: checklistFiltro ? Number(checklistFiltro) : undefined,
+        usuarioId: isAdmin && usuarioFiltro ? Number(usuarioFiltro) : undefined,
+        dataInicio: dataInicioFiltro || undefined,
+        dataFim: dataFimFiltro ? `${dataFimFiltro}T23:59:59.999` : undefined,
       });
       setExecucoes(resposta.dados);
       setTotalPaginas(resposta.paginacao.totalPaginas || 1);
@@ -56,22 +70,32 @@ export function ExecucoesPage() {
     } finally {
       setCarregando(false);
     }
-  }, [pagina, statusFiltro]);
+  }, [pagina, statusFiltro, checklistFiltro, usuarioFiltro, dataInicioFiltro, dataFimFiltro, isAdmin]);
 
   useEffect(() => {
     carregar();
   }, [carregar]);
+  useEffect(() => {
+    listarChecklists()
+      .then(setChecklistsFiltro)
+      .catch(() => setChecklistsFiltro([]));
 
-  async function abrirModalExecutar() {
+    if (isAdmin) {
+      listarUsuarios()
+        .then(setUsuariosFiltro)
+        .catch(() => setUsuariosFiltro([]));
+    }
+  }, [isAdmin]);
+
+  function onFiltroChange<T>(setter: (value: T) => void, value: T) {
+    setPagina(1);
+    setter(value);
+  }
+
+  function abrirModalExecutar() {
     setErroModal(null);
     setChecklistEscolhido('');
     setModalAberto(true);
-    try {
-      const dados = await listarChecklists();
-      setChecklistsDisponiveis(dados.filter((checklist) => checklist.ativo));
-    } catch (error) {
-      setErroModal(error instanceof ApiError ? error.message : 'Não foi possível carregar os checklists.');
-    }
   }
 
   async function onIniciar() {
@@ -109,16 +133,54 @@ export function ExecucoesPage() {
         <Select
           label="Status"
           value={statusFiltro}
-          onChange={(event) => {
-            setPagina(1);
-            setStatusFiltro(event.target.value as StatusExecucao | '');
-          }}
+          onChange={(event) => onFiltroChange(setStatusFiltro, event.target.value as StatusExecucao | '')}
         >
           <option value="">Todos</option>
           <option value="EM_ANDAMENTO">Em andamento</option>
           <option value="CONCLUIDA">Concluído</option>
           <option value="CANCELADA">Cancelado</option>
         </Select>
+
+        <Select
+          label="Checklist"
+          value={checklistFiltro}
+          onChange={(event) => onFiltroChange(setChecklistFiltro, event.target.value)}
+        >
+          <option value="">Todos</option>
+          {checklistsFiltro.map((checklist) => (
+            <option key={checklist.id} value={checklist.id}>
+              {checklist.titulo}
+            </option>
+          ))}
+        </Select>
+
+        {isAdmin && (
+          <Select
+            label="Usuário"
+            value={usuarioFiltro}
+            onChange={(event) => onFiltroChange(setUsuarioFiltro, event.target.value)}
+          >
+            <option value="">Todos</option>
+            {usuariosFiltro.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.nome}
+              </option>
+            ))}
+          </Select>
+        )}
+
+        <Input
+          label="De"
+          type="date"
+          value={dataInicioFiltro}
+          onChange={(event) => onFiltroChange(setDataInicioFiltro, event.target.value)}
+        />
+        <Input
+          label="Até"
+          type="date"
+          value={dataFimFiltro}
+          onChange={(event) => onFiltroChange(setDataFimFiltro, event.target.value)}
+        />
       </div>
 
       {erro && <ErrorBanner message={erro} onRetry={carregar} />}
@@ -179,8 +241,8 @@ export function ExecucoesPage() {
         <Modal title="Executar Checklist" onClose={() => setModalAberto(false)}>
           <div className="form-grid">
             {erroModal && <div className="form-error">{erroModal}</div>}
-            {checklistsDisponiveis.length === 0 && !erroModal ? (
-              <LoadingState label="Carregando checklists…" />
+            {checklistsDisponiveis.length === 0 ? (
+              <EmptyState title="Nenhum checklist ativo disponível" />
             ) : (
               <Select
                 label="Checklist"
@@ -199,7 +261,7 @@ export function ExecucoesPage() {
               <Button variant="secondary" type="button" onClick={() => setModalAberto(false)}>
                 Cancelar
               </Button>
-              <Button type="button" loading={iniciando} onClick={onIniciar}>
+              <Button type="button" loading={iniciando} onClick={onIniciar} disabled={checklistsDisponiveis.length === 0}>
                 Iniciar
               </Button>
             </div>

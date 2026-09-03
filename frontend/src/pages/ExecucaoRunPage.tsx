@@ -140,14 +140,12 @@ export function ExecucaoRunPage() {
           </div>
 
           {podeEditar && (
-            <div className="form-actions" style={{ marginTop: 20 }}>
-              <Button variant="secondary" onClick={onCancelar} loading={cancelando}>
-                Cancelar Execução
-              </Button>
+            <div style={{ marginTop: 20 }}>
               <Button
                 onClick={onFinalizar}
                 loading={finalizando}
                 disabled={!execucao.progresso.podeFinalizar}
+                className="btn-full"
                 title={
                   execucao.progresso.podeFinalizar
                     ? undefined
@@ -156,6 +154,11 @@ export function ExecucaoRunPage() {
               >
                 Finalizar Execução
               </Button>
+              <div style={{ textAlign: 'center', marginTop: 12 }}>
+                <button type="button" className="link-btn link-btn-muted" onClick={onCancelar} disabled={cancelando}>
+                  {cancelando ? 'Cancelando…' : 'Cancelar execução'}
+                </button>
+              </div>
             </div>
           )}
         </div>

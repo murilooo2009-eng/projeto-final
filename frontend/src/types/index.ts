@@ -104,6 +104,8 @@ export interface ExecucoesFiltro {
   status?: StatusExecucao;
   checklistId?: number;
   usuarioId?: number;
+  dataInicio?: string;
+  dataFim?: string;
 }
 
 export interface DashboardMetricasAdmin {

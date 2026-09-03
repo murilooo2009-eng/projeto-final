@@ -29,7 +29,3 @@ export function atualizarUsuario(id: number, dto: UpdateUsuarioInput) {
 export function alterarStatusUsuario(id: number, ativo: boolean) {
   return apiRequest<Usuario>(`/usuarios/${id}/status`, { method: 'PATCH', body: { ativo } });
 }
-
-export function removerUsuario(id: number) {
-  return apiRequest<Usuario>(`/usuarios/${id}`, { method: 'DELETE' });
-}

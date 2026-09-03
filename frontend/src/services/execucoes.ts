@@ -5,10 +5,6 @@ export function iniciarExecucao(checklistId: number) {
   return apiRequest<Execucao>(`/execucoes/checklists/${checklistId}`, { method: 'POST' });
 }
 
-export function listarExecucoesEmAndamento() {
-  return apiRequest<Execucao[]>('/execucoes/em-andamento');
-}
-
 export function listarExecucoes(filtro: ExecucoesFiltro) {
   return apiRequest<ListaExecucoes>('/execucoes', {
     query: {
@@ -17,6 +13,8 @@ export function listarExecucoes(filtro: ExecucoesFiltro) {
       status: filtro.status,
       checklistId: filtro.checklistId,
       usuarioId: filtro.usuarioId,
+      dataInicio: filtro.dataInicio,
+      dataFim: filtro.dataFim,
     },
   });
 }
